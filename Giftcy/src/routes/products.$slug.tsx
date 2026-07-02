@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Heart, Minus, Plus, Share2, ShoppingBag, Truck } from "lucide-react";
 import { getProduct as getStaticProduct, products, type Product } from "@/lib/products";
 import { ProductCard } from "@/components/ProductCard";
@@ -43,14 +43,37 @@ export const Route = createFileRoute("/products/$slug")({
   ),
 });
 
+const toShortSize = (s: string) => {
+  const norm = s.trim().toLowerCase();
+  if (norm === "small") return "S";
+  if (norm === "medium") return "M";
+  if (norm === "large") return "L";
+  if (norm === "extra large") return "XL";
+  if (s.length <= 2) return s.toUpperCase();
+  return s;
+};
+
+const sortSizes = (sizes: string[]) => {
+  const order = ["s", "small", "m", "medium", "l", "large", "xl", "bespoke"];
+  return [...sizes].sort((a, b) => {
+    const idxA = order.indexOf(a.trim().toLowerCase());
+    const idxB = order.indexOf(b.trim().toLowerCase());
+    if (idxA === -1 && idxB === -1) return a.localeCompare(b);
+    if (idxA === -1) return 1;
+    if (idxB === -1) return -1;
+    return idxA - idxB;
+  });
+};
+
 function PDP() {
   const { product } = Route.useLoaderData() as { product: Product };
   const { add, setOpen } = useCart();
   const { toggle, has } = useWishlist();
   const { user } = useAuth();
   const isWishlisted = has(product.id);
-  const [size, setSize] = useState(product.sizes[1] ?? product.sizes[0]);
-  const [color, setColor] = useState(product.colors[0]);
+  const sortedSizes = useMemo(() => sortSizes(product.sizes), [product.sizes]);
+  const [size, setSize] = useState(sortedSizes[1] ?? sortedSizes[0] ?? "");
+  const [color, setColor] = useState(product.colors[0] ?? "");
   const [qty, setQty] = useState(1);
   const off = Math.round(((product.mrp - product.price) / product.mrp) * 100);
 
@@ -117,8 +140,11 @@ function PDP() {
     }
     setPincode("");
     setPincodeStatus("idle");
+    setSize(sortedSizes[1] ?? sortedSizes[0] ?? "");
+    setColor(product.colors[0] ?? "");
+    setQty(1);
     fetchReviews();
-  }, [product]);
+  }, [product, sortedSizes]);
 
   const fetchReviews = async () => {
     if (!product.id) return;
@@ -374,13 +400,13 @@ function PDP() {
           <div className="mt-6">
             <p className="text-xs tracking-[0.2em] uppercase text-muted-foreground mb-3">Size</p>
             <div className="flex gap-2">
-              {product.sizes.map((s) => (
+              {sortedSizes.map((s) => (
                 <button
                   key={s}
                   onClick={() => setSize(s)}
                   className={`h-11 w-11 rounded-full border text-sm transition ${size === s ? "border-foreground bg-foreground text-background" : "border-border hover:border-foreground"}`}
                 >
-                  {s}
+                  {toShortSize(s)}
                 </button>
               ))}
             </div>

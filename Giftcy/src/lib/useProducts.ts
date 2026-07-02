@@ -21,6 +21,8 @@ export type DBProduct = {
   flipkart_url?: string | null;
   createdAt: string;
   priority?: number;
+  colors?: string[];
+  sizes?: string[];
 };
 
 export const dbToProduct = (d: DBProduct): Product => {
@@ -57,8 +59,8 @@ export const dbToProduct = (d: DBProduct): Product => {
     image: d.images?.[0] || fallbackImage,
     images: d.images && d.images.length > 0 ? d.images : [d.images?.[0] || fallbackImage],
     badge: d.isBestSeller ? "Bestseller" : d.isNewArrival ? "New" : undefined,
-    colors: ["Ivory", "Gold", "Blush"],
-    sizes: ["S", "M", "L"],
+    colors: d.colors && d.colors.length > 0 ? d.colors : ["Ivory", "Gold", "Blush"],
+    sizes: d.sizes && d.sizes.length > 0 ? d.sizes : ["S", "M", "L"],
     description: d.description || "",
     priority: d.priority !== undefined ? d.priority : 99999,
   };
